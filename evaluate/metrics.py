@@ -5,6 +5,11 @@ import math
 from einops import rearrange
 import numpy as np
 
+#######################################################################
+import pandas as pd
+from rectools.metrics.diversity import IntraListDiversity
+from rectools.metrics.distances import PairwiseHammingDistanceCalculator
+#######################################################################
 
 def compute_dcg(relevance: list) -> float:
     return sum(rel / math.log2(idx + 2) for idx, rel in enumerate(relevance))
@@ -65,6 +70,9 @@ class TopKAccumulator:
     def __init__(self, ks=[1, 5, 10]):
         self.ks = ks
         self.reset()
+        self.zero_semantic_count = defaultdict(int)
+        self.unknown_category_count = 0
+        self.total_category_lookups = 0
 
     def reset(self):
         self.total = 0
@@ -92,7 +100,8 @@ class TopKAccumulator:
             pred_docs = top_k[b]
             for k in self.ks:
                 topk_pred = pred_docs[:k]
-                hits = sum(1 for doc in topk_pred if doc in gold_docs)
+                # hits = sum(1 for doc in topk_pred if doc in gold_docs)
+                hits = torch.any(torch.all(topk_pred == gold_docs, dim=1)).item()
                 self.metrics[f"h@{k}"] += float(hits > 0)
                 self.metrics[f"ndcg@{k}"] += compute_ndcg_for_semantic_ids(
                     pred_docs, gold_docs, k
@@ -102,12 +111,46 @@ class TopKAccumulator:
                     list_gini = []
                     for pred in topk_pred:
                         idx = str(pred.tolist()[:-1])
-                        category = tokenizer.map_to_category[idx]
+                        category = tokenizer.map_to_category.get(idx, "UNKNOWN")
                         list_gini.append({"id": idx, "category": category})
+                        self.zero_semantic_count[idx] += 1  # ← LOG HERE
+                        self.total_category_lookups += 1  # ← total lookups
+                        if category == "UNKNOWN":
+                            self.unknown_category_count += 1  # ← count UNKNOWNs
                     self.metrics[f"gini@{k}"] += GiniCoefficient().calculate_list_gini(
                         list_gini, key="category"
                     )
+                #######################################################################
+                if k > 1:
+                    # Calculate Intra-List Diversity (ILD)
+                    user_ids = [b]*k
+                    item_ids = list(range(k))
+                    ranking = list(range(1, k + 1))
+                    reco = pd.DataFrame({
+                        "user_id": user_ids,
+                        "rank": ranking,
+                        "item_id": item_ids,
+                        
+                    })  
+                    # print(f"ILD DF for user {b} with k {k} : {reco.head()}") 
+                    features_df = pd.DataFrame(topk_pred.cpu().numpy(), columns=["feat_1", "feat_2", "feat_3", "feat_4"])     
+                    # print(f"Features DF for user {b} with k {k} : {features_df.head()}")     
+                    calc = PairwiseHammingDistanceCalculator(features_df)
+                    self.metrics[f"ild@{k}"] = IntraListDiversity(k=k, distance_calculator=calc).calc(reco)
+                #######################################################################
         self.total += B
 
     def reduce(self) -> dict:
+        print(f"\nNumber of semantic IDs mapped to UNKNOWN category: {self.unknown_category_count}")
+        print(f"Total category lookups: {self.total_category_lookups}")
+
+        if self.total_category_lookups > 0:
+            unknown_percentage = 100 * self.unknown_category_count / self.total_category_lookups
+            print(f"Percentage of UNKNOWNs: {unknown_percentage:.2f}%")
+        else:
+            print("No category lookups performed.")
+
+        print("\nTop 10 most frequent predicted semantic IDs:")
+        for semantic_id, count in sorted(self.zero_semantic_count.items(), key=lambda x: -x[1])[:10]:
+            print(f"{semantic_id}: {count}")
         return {k: v / self.total for k, v in self.metrics.items()}

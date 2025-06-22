@@ -97,11 +97,21 @@ class AmazonReviews(InMemoryDataset, PreprocessingMixin):
                 parsed_line = list(map(int, line.strip().split()))
                 user_ids.append(parsed_line[0])
                 items = [self._remap_ids(id) for id in parsed_line[1:]]
+                # print(
+                #         f"User {parsed_line[0]} has {len(items)} items"
+                #     )
 
                 # We keep the whole sequence without padding. Allows flexible training-time subsampling.
-                train_items = items[:-2]
+                # train_items = items[:-2]
+                # sequences["train"]["itemId"].append(train_items)
+                # sequences["train"]["itemId_fut"].append(items[-2])                
+                #######################################################################
+                
+                train_items = items[:-3] # was -2
                 sequences["train"]["itemId"].append(train_items)
-                sequences["train"]["itemId_fut"].append(items[-2])
+                sequences["train"]["itemId_fut"].append(items[-3]) # was -2
+                
+                #######################################################################
 
                 eval_items = items[-(max_seq_len + 2) : -2]
                 sequences["eval"]["itemId"].append(
@@ -194,7 +204,31 @@ class AmazonReviews(InMemoryDataset, PreprocessingMixin):
 
         gen = torch.Generator()
         gen.manual_seed(42)
-        data["item"].is_train = torch.rand(item_emb.shape[0], generator=gen) > 0.05
+        # data["item"].is_train = torch.rand(item_emb.shape[0], generator=gen) > 0.05
+        
+        ######################################################################
+        n_total = item_emb.shape[0]
+        permutation = torch.randperm(n_total, generator=gen)
+
+        n_train = int(0.8 * n_total)
+        n_eval = int(0.1 * n_total)
+        splits = [n_train, n_train + n_eval]
+
+        train_items = permutation[:splits[0]]
+        eval_items = permutation[splits[0]:splits[1]]
+        test_items = permutation[splits[1]:]
+    
+        keys = ["is_train", "is_eval", "is_test"]
+        for key in keys:
+            mask = torch.zeros(n_total, dtype=torch.bool)
+            if key == "is_train":
+                mask[train_items] = True
+            elif key == "is_eval":
+                mask[eval_items] = True
+            elif key == "is_test":
+                mask[test_items] = True
+            data["item"][key] = mask
+        ######################################################################
 
         self.save([data], self.processed_paths[0])
 
