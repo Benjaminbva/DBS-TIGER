@@ -570,6 +570,14 @@ class EncoderDecoderRetrievalModel(nn.Module):
         final_sem_ids = torch.cat(generated_groups, dim=1)
         final_log_probas = torch.cat(logprobs_groups,  dim=1)
 
+        # ── Step 5: global sort across the full beam ────────────────────────
+        #   so that we truly pick the top-K by (possibly penalized) score
+        sorted_scores, sorted_inds = final_log_probas.sort(dim=1, descending=True)
+        # we need to expand sorted_inds to index the seq_len dimension too
+        expand_idx = sorted_inds.unsqueeze(-1).expand(-1, -1, final_sem_ids.size(-1))
+        final_sem_ids    = final_sem_ids.gather(dim=1, index=expand_idx)
+        final_log_probas = sorted_scores
+
         return GenerationOutput(
             sem_ids=final_sem_ids,
             log_probas=final_log_probas

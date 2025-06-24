@@ -3,6 +3,7 @@ import os
 import random
 import torch
 
+from data.yelp import YelpReviews
 from data.amazon import AmazonReviews
 from data.ml1m import RawMovieLens1M
 from data.ml32m import RawMovieLens32M
@@ -20,12 +21,14 @@ class RecDataset(Enum):
     AMAZON = 1
     ML_1M = 2
     ML_32M = 3
+    YELP = 4
 
 
 DATASET_NAME_TO_RAW_DATASET = {
     RecDataset.AMAZON: AmazonReviews,
     RecDataset.ML_1M: RawMovieLens1M,
     RecDataset.ML_32M: RawMovieLens32M,
+    RecDataset.YELP: YelpReviews,
 }
 
 
@@ -33,6 +36,7 @@ DATASET_NAME_TO_MAX_SEQ_LEN = {
     RecDataset.AMAZON: 20,
     RecDataset.ML_1M: 200,
     RecDataset.ML_32M: 200,
+    RecDataset.YELP: 20,
 }
 
 

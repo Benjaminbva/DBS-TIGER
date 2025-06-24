@@ -16,4 +16,7 @@ module load CUDA/12.6.0
 
 source activate tiger
 
+# Set W&B API key
+export WANDB_API_KEY='7e0ae6f3456ca16019fd14b53514eeeb4ee2f9ee'
+
 python train_decoder.py configs/decoder_sports.gin

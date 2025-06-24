@@ -66,8 +66,8 @@ def train(
     vae_hf_model_name="edobotta/rqvae-amazon-beauty",
     category=None,
 ):
-    if dataset != RecDataset.AMAZON:
-        raise Exception(f"Dataset currently not supported: {dataset}.")
+    # if dataset != RecDataset.AMAZON:
+    #     raise Exception(f"Dataset currently not supported: {dataset}.")
 
     if wandb_logging:
         params = locals()
@@ -259,12 +259,12 @@ def train(
                         data = batch_to(batch, device)
                         tokenized_data = tokenizer(data)
 
-                        # generated = model.generate_next_sem_id(
-                        #     tokenized_data, top_k=True, temperature=1
-                        # )
-                        generated = model.generate_next_sem_id_dbs(
-                            tokenized_data, top_k=True, temperature=1, num_groups = 4
+                        generated = model.generate_next_sem_id(
+                            tokenized_data, top_k=True, temperature=1
                         )
+                        # generated = model.generate_next_sem_id_dbs(
+                        #     tokenized_data, top_k=True, temperature=1, num_groups = 4
+                        # )
                         actual, top_k = tokenized_data.sem_ids_fut, generated.sem_ids
                         # add the tokinzer
                         metrics_accumulator.accumulate(
