@@ -272,6 +272,7 @@ class EncoderDecoderRetrievalModel(nn.Module):
 
                 generated = torch.clone(top_k_samples.detach())
                 log_probas = torch.clone(top_k_log_probas.detach())
+                print("final sem ids:", generated[0])
             else:
                 next_sem_ids = top_k_samples.reshape(-1, 1)
 
@@ -335,7 +336,7 @@ class EncoderDecoderRetrievalModel(nn.Module):
         self, batch: TokenizedSeqBatch, 
         temperature: int = 1, top_k: bool = True,
         num_groups: int = 1,
-        diversity_lambda: Union[float, List[float]] = 0.5,
+        diversity_lambda: Union[float, List[float]] = 0.8,
         diversity_func: str = "hamming",
         ngram_size: int = 2 # bigram
     ) -> GenerationOutput:
@@ -373,6 +374,8 @@ class EncoderDecoderRetrievalModel(nn.Module):
 
         # ── Step 3: for each position i, expand each sub-beam in turn ─────
         for i in range(self.sem_id_dim):
+            print("i:", i)
+            #print("sem id dim:", self.sem_id_dim)
             new_inputs = []
             new_gens = []
             new_logprobs  = []
@@ -419,7 +422,8 @@ class EncoderDecoderRetrievalModel(nn.Module):
                     )
                 )
 
-                if diversity_func == "hamming":
+
+                if diversity_func == "hamming" and i != 3:
                     # Hamming‐diversity penalty for g > 0
                     if g > 0 and λg != 0.0:
                         counts = torch.zeros_like(raw_scores)
@@ -427,6 +431,7 @@ class EncoderDecoderRetrievalModel(nn.Module):
                             prev_last = new_gens[h][:,:, -1]    # (B, B_per_group)
                             eq = flat_samps.unsqueeze(2) == prev_last.unsqueeze(1)
                             counts = counts + eq.sum(dim=2).to(raw_scores.dtype)
+                            #print("counts", counts)
                         raw_scores = raw_scores - λg * counts
 
                 if diversity_func == "ngram":
@@ -570,6 +575,8 @@ class EncoderDecoderRetrievalModel(nn.Module):
         final_sem_ids = torch.cat(generated_groups, dim=1)
         final_log_probas = torch.cat(logprobs_groups,  dim=1)
 
+        print("final sem ids:", final_sem_ids[0])
+
         # ── Step 5: global sort across the full beam ────────────────────────
         #   so that we truly pick the top-K by (possibly penalized) score
         sorted_scores, sorted_inds = final_log_probas.sort(dim=1, descending=True)
@@ -577,6 +584,8 @@ class EncoderDecoderRetrievalModel(nn.Module):
         expand_idx = sorted_inds.unsqueeze(-1).expand(-1, -1, final_sem_ids.size(-1))
         final_sem_ids    = final_sem_ids.gather(dim=1, index=expand_idx)
         final_log_probas = sorted_scores
+
+        print("final sem ids na sort:", final_sem_ids[0])
 
         return GenerationOutput(
             sem_ids=final_sem_ids,
