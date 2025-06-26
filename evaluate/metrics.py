@@ -100,7 +100,7 @@ class TopKAccumulator:
             pred_docs = top_k[b]
             for k in self.ks:
                 topk_pred = pred_docs[:k]
-                # hits = sum(1 for doc in topk_pred if doc in gold_docs)
+                # hits = sum(1 for doc in topk_pred if doc in gold_docs) # wrong
                 hits = torch.any(torch.all(topk_pred == gold_docs, dim=1)).item()
                 self.metrics[f"h@{k}"] += float(hits > 0)
                 self.metrics[f"ndcg@{k}"] += compute_ndcg_for_semantic_ids(
@@ -132,9 +132,7 @@ class TopKAccumulator:
                         "item_id": item_ids,
                         
                     })  
-                    # print(f"ILD DF for user {b} with k {k} : {reco.head()}") 
                     features_df = pd.DataFrame(topk_pred.cpu().numpy(), columns=["feat_1", "feat_2", "feat_3", "feat_4"])     
-                    # print(f"Features DF for user {b} with k {k} : {features_df.head()}")
                     calc = PairwiseHammingDistanceCalculator(features_df)
                     self.metrics[f"ild@{k}"] += IntraListDiversity(k=k, distance_calculator=calc).calc(reco)
                 #######################################################################

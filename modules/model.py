@@ -337,8 +337,7 @@ class EncoderDecoderRetrievalModel(nn.Module):
         temperature: int = 1, top_k: bool = True,
         num_groups: int = 1,
         diversity_lambda: Union[float, List[float]] = 0.8,
-        diversity_func: str = "hamming",
-        ngram_size: int = 2 # bigram
+        diversity_func: str = "hamming"
     ) -> GenerationOutput:
 
         assert self.enable_generation, "Model generation is not enabled"
@@ -432,33 +431,6 @@ class EncoderDecoderRetrievalModel(nn.Module):
                             eq = flat_samps.unsqueeze(2) == prev_last.unsqueeze(1)
                             counts = counts + eq.sum(dim=2).to(raw_scores.dtype)
                             #print("counts", counts)
-                        raw_scores = raw_scores - λg * counts
-
-                if diversity_func == "ngram":
-                    # n-gram diversity penalty for groups > 0
-                    if g > 0 and λg != 0.0:
-                        # collect n-1 tokens suffixes from earlier groups
-                        counts = torch.zeros_like(raw_scores)
-                        for h in range(g):
-                            prev_seqs = generated_groups[h]  # shape: (B, B_per_group_h, t) or (B, t) if first
-                            # reshape to (B*beams, t)
-                            flat_prev = prev_seqs.reshape(-1, prev_seqs.shape[-1])
-                            # for each candidate, compare last n-1 tokens
-                            if flat_prev.shape[-1] + 1 >= ngram_size:
-                                suffix = flat_prev[:, - (ngram_size - 1):]
-                                # expand suffix for all candidates
-                                suffix_exp = suffix.view(B, -1, 1, ngram_size - 1)
-                                flat_cand = samples.reshape(B, -1, 1)
-                                # build ngram tensors: (B, prev_beams, V, n)
-                                cand_exp = flat_cand.unsqueeze(1).expand(-1, suffix_exp.shape[1], -1, -1)
-                                suffix_tile = suffix_exp.expand(-1, -1, cand_exp.shape[2], -1)
-                                ngrams = torch.cat([suffix_tile, cand_exp], dim=-1)
-                                # compare against previous group ngrams
-                                prev_ng = ngrams.reshape(B, -1, ngram_size)
-                                # for each candidate, count matches across prev sequences
-                                eq = (prev_ng.unsqueeze(2) == ngrams.view(B, -1, 1, ngram_size)).all(dim=-1)
-                                # sum matches per candidate token
-                                counts = counts + eq.sum(dim=1)
                         raw_scores = raw_scores - λg * counts
 
                 # — prune to B_per_group —
