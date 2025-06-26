@@ -134,7 +134,7 @@ class TopKAccumulator:
                     })  
                     # print(f"ILD DF for user {b} with k {k} : {reco.head()}") 
                     features_df = pd.DataFrame(topk_pred.cpu().numpy(), columns=["feat_1", "feat_2", "feat_3", "feat_4"])     
-                    # print(f"Features DF for user {b} with k {k} : {features_df.head()}")     
+                    # print(f"Features DF for user {b} with k {k} : {features_df.head()}")
                     calc = PairwiseHammingDistanceCalculator(features_df)
                     self.metrics[f"ild@{k}"] += IntraListDiversity(k=k, distance_calculator=calc).calc(reco)
                 #######################################################################

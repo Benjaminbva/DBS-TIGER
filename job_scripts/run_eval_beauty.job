@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu_h100
+#SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
 #SBATCH --job-name=eval_beauty
-#SBATCH --time=04:00:00
+#SBATCH --time=20:00:00
 #SBATCH --output=./slurm_out/beauty/evaluation/amazon_%j.out
 
 #exit if an error occurs

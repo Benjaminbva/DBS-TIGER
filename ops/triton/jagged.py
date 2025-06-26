@@ -51,15 +51,12 @@ class PaddedToJaggedTensor(Function):
             device=x.device,
             requires_grad=x.requires_grad,
         )
-        # target._offsets = torch.empty(
-        #     len(lengths) + 1,
-        #     dtype=x.dtype,
-        #     device=x.device,
-        #     requires_grad=x.requires_grad,
-        # )
-
-        target._offsets = offsets.clone()
-
+        target._offsets = torch.empty(
+            len(lengths) + 1,
+            dtype=x.dtype,
+            device=x.device,
+            requires_grad=x.requires_grad,
+        )
         target._metadata_cache = {}
 
         grid = lambda meta: (

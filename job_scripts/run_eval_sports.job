@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
 #SBATCH --job-name=eval_sports
-#SBATCH --time=04:00:00
+#SBATCH --time=20:00:00
 #SBATCH --output=./slurm_out/sports/evaluation/amazon_%j.out
 
 #exit if an error occurs
