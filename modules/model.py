@@ -21,6 +21,8 @@ from typing import NamedTuple
 from torch import nn
 from torch import Tensor
 from torch.nn import functional as F
+from typing import Dict, Tuple, Union, List # NEW BEN
+
 
 # Needed to make torch.compile succeed
 torch._dynamo.config.suppress_errors = True
@@ -270,6 +272,7 @@ class EncoderDecoderRetrievalModel(nn.Module):
 
                 generated = torch.clone(top_k_samples.detach())
                 log_probas = torch.clone(top_k_log_probas.detach())
+                print("final sem ids:", generated[0])
             else:
                 next_sem_ids = top_k_samples.reshape(-1, 1)
 
@@ -320,8 +323,245 @@ class EncoderDecoderRetrievalModel(nn.Module):
                 generated = top_k_samples.unsqueeze(-1)
                 log_probas = torch.clone(top_k_log_probas.detach())
 
+                print("[DEBUG] DBS penalty applied", flush=True)
+
         return GenerationOutput(
             sem_ids=generated.squeeze(), log_probas=log_probas.squeeze()
+        )
+
+    @eval_mode
+    @reset_encoder_cache
+    @torch.no_grad
+    def generate_next_sem_id_dbs(
+        self, batch: TokenizedSeqBatch, 
+        temperature: int = 1, top_k: bool = True,
+        num_groups: int = 1,
+        diversity_lambda: Union[float, List[float]] = 0.8,
+        diversity_func: str = "hamming"
+    ) -> GenerationOutput:
+
+        assert self.enable_generation, "Model generation is not enabled"
+
+        B, N = batch.sem_ids.shape
+        k = 32 if top_k else 1
+        n_top_k_candidates = 200 if top_k else 1
+
+        # ── Step 1: split beam into G groups of size B_per_group ───────────
+        G = num_groups
+        assert k % G == 0, "k must be divisible by num_groups"
+        B_per_group = k // G
+
+        # build per-group λ list: lambda for first group is 0, for the rest it is diversity_lambda
+        if isinstance(diversity_lambda, (int, float)):
+            lambdas = [0.0] + [float(diversity_lambda)] * (G - 1)
+        else:
+            assert len(diversity_lambda) == G, "need one λ per group"
+            lambdas = [0.0] + [float(x) for x in diversity_lambda[1:]]
+
+        # ── Step 2: initialize one input & one beam-state per group ────────
+        base_input       = TokenizedSeqBatch(
+            user_ids=batch.user_ids,
+            sem_ids=batch.sem_ids,
+            sem_ids_fut=None,
+            seq_mask=batch.seq_mask,
+            token_type_ids=batch.token_type_ids,
+            token_type_ids_fut=None,
+        )
+        input_batches = [base_input] * G
+        generated_groups = [None] * G
+        logprobs_groups = [None] * G
+
+        # ── Step 3: for each position i, expand each sub-beam in turn ─────
+        for i in range(self.sem_id_dim):
+            print("i:", i)
+            #print("sem id dim:", self.sem_id_dim)
+            new_inputs = []
+            new_gens = []
+            new_logprobs  = []
+
+            for g in range(G):
+                inp = input_batches[g]
+                λg = lambdas[g]
+
+                # — forward & sampling —
+                logits = self.forward(inp).logits
+                probas = F.softmax(logits / temperature, dim=-1)
+                samples = torch.multinomial(probas, num_samples=n_top_k_candidates)
+                B_, C_ = samples.shape
+
+                if generated_groups[g] is None:
+                    valid = self.inference_verifier_fn(samples.unsqueeze(-1))
+                else:
+                    pref = torch.cat([
+                        generated_groups[g]
+                            .flatten(0,1)
+                            .unsqueeze(1)
+                            .repeat_interleave(n_top_k_candidates, axis=1),
+                        samples.unsqueeze(-1)
+                    ], axis=-1)
+                    valid = self.inference_verifier_fn(pref).reshape(B, -1)
+
+                sampled_lp = torch.log(torch.gather(probas, 1, samples)).reshape(B, -1)
+                flat_samps = samples.reshape(B, -1)
+
+                # — pick previous logprobs or zero if none —
+                prev_logprobs = (
+                    logprobs_groups[g]
+                    if logprobs_groups[g] is not None
+                    else 0
+                )
+
+                raw_scores = (
+                    -1e4 * (~valid)
+                    + sampled_lp
+                    + maybe_repeat_interleave(
+                        prev_logprobs,
+                        n_top_k_candidates,
+                        dim=1,
+                    )
+                )
+
+
+                if diversity_func == "hamming" and i != 3:
+                    # Hamming‐diversity penalty for g > 0
+                    if g > 0 and λg != 0.0:
+                        counts = torch.zeros_like(raw_scores)
+                        for h in range(g):
+                            prev_last = new_gens[h][:,:, -1]    # (B, B_per_group)
+                            eq = flat_samps.unsqueeze(2) == prev_last.unsqueeze(1)
+                            counts = counts + eq.sum(dim=2).to(raw_scores.dtype)
+                            #print("counts", counts)
+                        raw_scores = raw_scores - λg * counts
+
+                # — prune to B_per_group —
+                sorted_scores, sorted_inds = raw_scores.sort(-1, descending=True)
+                topk_scores = sorted_scores[:, :B_per_group]
+                topk_inds = sorted_inds[:, :B_per_group]
+                topk_samps = torch.gather(flat_samps, 1, topk_inds)
+
+                # — rebuild `generated` & next‐batch for this group —
+                if generated_groups[g] is not None:
+                    parent_id = torch.gather(
+                        generated_groups[g],
+                        1,
+                        (topk_inds // n_top_k_candidates)
+                            .unsqueeze(2)
+                            .expand(-1, -1, i),
+                    )
+                    topk_samps = torch.cat([parent_id, topk_samps.unsqueeze(-1)], axis=-1)
+                    next_ids = topk_samps.flatten(end_dim=1)
+
+                    new_inp = TokenizedSeqBatch(
+                        user_ids=inp.user_ids,
+                        sem_ids=inp.sem_ids,
+                        sem_ids_fut=next_ids,
+                        token_type_ids_fut=torch.arange(
+                            next_ids.shape[1], device=next_ids.device
+                        ).repeat(next_ids.shape[0], 1),
+                        seq_mask=inp.seq_mask,
+                        token_type_ids=inp.token_type_ids,
+                    )
+                    new_gen = topk_samps.clone().detach()
+                    new_logprob = topk_scores.clone().detach()
+
+                else:
+                    next_ids = topk_samps.reshape(-1, 1)
+
+                    if self.jagged_mode:
+                        # Calculate sequence lengths for the current batch
+                        seq_lengths = inp.seq_mask.sum(axis=1)
+                        
+                        # Create a new sequence mask that includes the extra token
+                        new_seq_mask = torch.cat([
+                            torch.ones(inp.sem_ids.shape[0], 1, dtype=bool, device=inp.seq_mask.device),
+                            inp.seq_mask
+                        ], axis=1)
+                        
+                        # Calculate sequence lengths including the extra token
+                        new_seq_lengths = new_seq_mask.sum(axis=1)
+                        
+                        # If we have cached output, we need to ensure dimensions match
+                        if self.transformer.cached_enc_output is not None:
+                            # Get the cached sequence lengths
+                            cached_lengths = self.transformer.cached_enc_output.offsets().diff()
+                            
+                            # If lengths don't match, we need to recompute
+                            if not torch.all(new_seq_lengths == cached_lengths):
+                                self.transformer.cached_enc_output = None
+                                # Run a forward pass to initialize the cache with correct dimensions
+                                _ = self.forward(inp)
+                        
+                        # Create cache with consistent dimensions
+                        cache = torch.zeros(
+                            inp.sem_ids.shape[0],
+                            inp.sem_ids.shape[1] + 1,
+                            self.attn_dim,
+                            device=inp.sem_ids.device,
+                        )
+                        
+                        if self.transformer.cached_enc_output is not None:
+                            cache[new_seq_mask] = self.transformer.cached_enc_output.values()
+                            lengths = (
+                                self.transformer.cached_enc_output.offsets()
+                                    .diff()
+                                    .repeat_interleave(B_per_group)
+                            )
+                        else:
+                            # If no cached output, use new sequence lengths
+                            lengths = new_seq_lengths.repeat_interleave(B_per_group)
+                        
+                        # Ensure cache dimensions match the input
+                        cache = cache.repeat_interleave(B_per_group, dim=0)
+                        self.transformer.cached_enc_output = padded_to_jagged_tensor(
+                            cache, lengths, max_len=cache.shape[1]
+                        )
+                        
+                        # Update the input batch's sequence mask to match the cache
+                        new_seq_mask = torch.cat([
+                            torch.ones(inp.sem_ids.shape[0], 1, dtype=bool, device=inp.seq_mask.device),
+                            inp.seq_mask
+                        ], axis=1)
+                        new_seq_mask = new_seq_mask.repeat_interleave(B_per_group, dim=0)
+
+                    new_inp = TokenizedSeqBatch(
+                        user_ids=inp.user_ids.repeat_interleave(B_per_group, dim=0),
+                        sem_ids=inp.sem_ids.repeat_interleave(B_per_group, dim=0),
+                        sem_ids_fut=next_ids,
+                        token_type_ids_fut=torch.zeros_like(next_ids),
+                        seq_mask=inp.seq_mask.repeat_interleave(B_per_group, dim=0),
+                        token_type_ids=inp.token_type_ids.repeat_interleave(B_per_group, dim=0),
+                    )
+                    new_gen = topk_samps.unsqueeze(-1)
+                    new_logprob = topk_scores.clone().detach()
+
+                new_inputs.append(new_inp)
+                new_gens.append(new_gen)
+                new_logprobs.append(new_logprob)
+
+            # end for g
+            input_batches = new_inputs
+            generated_groups = new_gens
+            logprobs_groups = new_logprobs
+
+        # ── Step 4: stitch all groups back together ─────────────────────────
+        final_sem_ids = torch.cat(generated_groups, dim=1)
+        final_log_probas = torch.cat(logprobs_groups,  dim=1)
+
+        print("final sem ids:", final_sem_ids[0])
+
+        # ── Step 5: global sort across the full beam ────────────────────────
+        #   so that we truly pick the top-K by (possibly penalized) score
+        sorted_scores, sorted_inds = final_log_probas.sort(dim=1, descending=True)
+        # we need to expand sorted_inds to index the seq_len dimension too
+        expand_idx = sorted_inds.unsqueeze(-1).expand(-1, -1, final_sem_ids.size(-1))
+        final_sem_ids    = final_sem_ids.gather(dim=1, index=expand_idx)
+        final_log_probas = sorted_scores
+
+        print("final sem ids na sort:", final_sem_ids[0])
+
+        return GenerationOutput(
+            sem_ids=final_sem_ids,
+            log_probas=final_log_probas
         )
 
     @torch.compile
@@ -349,15 +589,16 @@ class EncoderDecoderRetrievalModel(nn.Module):
                 logits = predict_out
                 out = logits[:, :-1, :].flatten(end_dim=1)
                 target = batch.sem_ids_fut.flatten(end_dim=1)
-                loss = (
+                unred_loss = (
                     rearrange(
                         F.cross_entropy(out, target, reduction="none", ignore_index=-1),
                         "(b n) -> b n",
                         b=B,
                     )
-                    .sum(axis=1)
-                    .mean()
+                    # .sum(axis=1)
+                    # .mean()
                 )
+                loss = unred_loss.sum(axis=1).mean()
             if not self.training and self.jagged_mode:
                 self.transformer.cached_enc_output = None
             loss_d = unred_loss.mean(axis=0)

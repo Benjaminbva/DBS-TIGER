@@ -3,6 +3,7 @@ import os
 import random
 import torch
 
+from data.yelp import YelpReviews
 from data.amazon import AmazonReviews
 from data.ml1m import RawMovieLens1M
 from data.ml32m import RawMovieLens32M
@@ -20,12 +21,14 @@ class RecDataset(Enum):
     AMAZON = 1
     ML_1M = 2
     ML_32M = 3
+    YELP = 4
 
 
 DATASET_NAME_TO_RAW_DATASET = {
     RecDataset.AMAZON: AmazonReviews,
     RecDataset.ML_1M: RawMovieLens1M,
     RecDataset.ML_32M: RawMovieLens32M,
+    RecDataset.YELP: YelpReviews,
 }
 
 
@@ -33,6 +36,7 @@ DATASET_NAME_TO_MAX_SEQ_LEN = {
     RecDataset.AMAZON: 20,
     RecDataset.ML_1M: 200,
     RecDataset.ML_32M: 200,
+    RecDataset.YELP: 20,
 }
 
 
@@ -57,7 +61,10 @@ class ItemData(Dataset):
         if train_test_split == "train":
             filt = raw_data.data["item"]["is_train"]
         elif train_test_split == "eval":
-            filt = ~raw_data.data["item"]["is_train"]
+            # filt = ~raw_data.data["item"]["is_train"]
+            filt = raw_data.data["item"]["is_eval"]
+        elif train_test_split == "test":
+            filt = raw_data.data["item"]["is_test"]
         elif train_test_split == "all":
             filt = torch.ones_like(raw_data.data["item"]["x"][:, 0], dtype=bool)
 
@@ -94,6 +101,7 @@ class SeqData(Dataset):
         root: str,
         *args,
         is_train: bool = True,
+        is_validation: bool = False,
         subsample: bool = False,
         force_process: bool = False,
         dataset: RecDataset = RecDataset.ML_1M,
@@ -111,7 +119,20 @@ class SeqData(Dataset):
         if not os.path.exists(processed_data_path) or force_process:
             raw_data.process(max_seq_len=max_seq_len)
 
-        split = "train" if is_train else "test"
+        # split = "train" if is_train else "test"
+        
+        #######################################################################
+        
+        if is_train:
+            split = "train"
+        elif is_validation:
+            split = "eval"
+        else:
+            split = "test"
+        
+        #######################################################################
+        
+        
         self.subsample = subsample
         self.sequence_data = raw_data.data[("user", "rated", "item")]["history"][split]
 
@@ -184,26 +205,40 @@ class SeqData(Dataset):
 
 if __name__ == "__main__":
     dataset = ItemData(
-        "dataset/amazon", dataset=RecDataset.AMAZON, split="beauty", force_process=True
+        "dataset/amazon_beauty", dataset=RecDataset.AMAZON, split="beauty", force_process=True
     )
     dataset[0]
     train_dataset = SeqData(
-        root="dataset/amazon",
+        root="dataset/amazon_beauty",
         dataset=RecDataset.AMAZON,
         is_train=True,
+        is_validation=False,
         subsample=True,
         split="beauty",
     )
     print("train_dataset", train_dataset[0])
     eval_dataset = SeqData(
-        root="dataset/amazon",
+        root="dataset/amazon_beauty",
         dataset=RecDataset.AMAZON,
         is_train=False,
+        is_validation=True,
         subsample=False,
         split="beauty",
         get_brand_id=True,
     )
     print("eval_dataset", eval_dataset[0])
+    
+    test_dataset = SeqData(
+        root="dataset/amazon_beauty",
+        dataset=RecDataset.AMAZON,
+        is_train=False,
+        is_validation=False,
+        subsample=False,
+        split="beauty",
+        get_brand_id=True,
+    )
+    print("test_dataset", test_dataset[0])
+    
     import pdb
 
     pdb.set_trace()

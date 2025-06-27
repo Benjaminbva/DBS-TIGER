@@ -3,6 +3,7 @@ import os
 import gin
 import torch
 import wandb
+import random 
 
 from accelerate import Accelerator
 from data.processed import ItemData
@@ -64,9 +65,12 @@ def train(
     model_jagged_mode=True,
     vae_hf_model_name="edobotta/rqvae-amazon-beauty",
     category=None,
+    search="dbs",
+    temp=1,
+    lambda_dbs=0.8
 ):
-    if dataset != RecDataset.AMAZON:
-        raise Exception(f"Dataset currently not supported: {dataset}.")
+    # if dataset != RecDataset.AMAZON:
+    #     raise Exception(f"Dataset currently not supported: {dataset}.")
 
     if wandb_logging:
         params = locals()
@@ -106,6 +110,7 @@ def train(
         subsample=train_data_subsample,
         split=dataset_split,
     )
+
     eval_dataset = SeqData(
         root=dataset_folder,
         dataset=dataset,
@@ -113,16 +118,30 @@ def train(
         subsample=False,
         split=dataset_split,
     )
-
+    #######################################################################
+    test_dataset = SeqData(
+        root=dataset_folder,
+        dataset=dataset,
+        is_train=False,
+        is_validation=False,
+        subsample=False,
+        split=dataset_split,
+    )
+    #######################################################################
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     train_dataloader = cycle(train_dataloader)
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True)
-
-    train_dataloader, eval_dataloader = accelerator.prepare(
-        train_dataloader, eval_dataloader
+    #######################################################################
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    train_dataloader, eval_dataloader, test_dataloader = accelerator.prepare(
+        train_dataloader, eval_dataloader, test_dataloader
     )
+    #######################################################################
 
+    # train_dataloader, eval_dataloader = accelerator.prepare(
+    #     train_dataloader, eval_dataloader
+    # )
     tokenizer = SemanticIdTokenizer(
         input_dim=vae_input_dim,
         hidden_dims=vae_hidden_dims,
@@ -162,10 +181,13 @@ def train(
 
     start_iter = 0
     if pretrained_decoder_path is not None:
+        
         checkpoint = torch.load(
             pretrained_decoder_path, map_location=device, weights_only=False
         )
+
         model.load_state_dict(checkpoint["model"])
+
         optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint:
             lr_scheduler.load_state_dict(checkpoint["scheduler"])
@@ -210,7 +232,6 @@ def train(
             lr_scheduler.step()
 
             accelerator.wait_for_everyone()
-
             if (iter + 1) % partial_eval_every == 0:
                 model.eval()
                 model.enable_generation = False
@@ -229,35 +250,44 @@ def train(
                             model_output_eval.loss.detach().cpu().item()
                         )
                         wandb.log(eval_debug_metrics)
-
             if (iter + 1) % full_eval_every == 0:
                 model.eval()
                 model.enable_generation = True
                 with tqdm(
-                    eval_dataloader,
-                    desc=f"Eval {iter+1}",
+                    test_dataloader,
+                    desc=f"Test Eval {iter+1}",
                     disable=not accelerator.is_main_process,
-                ) as pbar_eval:
-                    for batch in pbar_eval:
+                ) as pbar_test:
+                    for batch in pbar_test:
                         data = batch_to(batch, device)
                         tokenized_data = tokenizer(data)
 
-                        generated = model.generate_next_sem_id(
-                            tokenized_data, top_k=True, temperature=1
-                        )
+                        if search == "cbs":
+                            generated = model.generate_next_sem_id(
+                                tokenized_data, top_k=True, temperature=temp
+                            )
+                        elif search == "dbs":
+                            generated = model.generate_next_sem_id_dbs(
+                                tokenized_data, 
+                                top_k=True, 
+                                temperature=temp, 
+                                num_groups = 4, 
+                                diversity_func = "hamming", 
+                                diversity_lambda = lambda_dbs
+                            )
+
                         actual, top_k = tokenized_data.sem_ids_fut, generated.sem_ids
                         # add the tokinzer
                         metrics_accumulator.accumulate(
                             actual=actual, top_k=top_k, tokenizer=tokenizer
                         )
-                eval_metrics = metrics_accumulator.reduce()
+                test_metrics = metrics_accumulator.reduce()
 
-                print(eval_metrics)
+                print(test_metrics)
                 if accelerator.is_main_process and wandb_logging:
-                    wandb.log(eval_metrics)
+                    wandb.log(test_metrics)
 
                 metrics_accumulator.reset()
-
             if accelerator.is_main_process:
                 if (iter + 1) % save_model_every == 0 or iter + 1 == iterations:
                     state = {

@@ -1,7 +1,7 @@
 import data.processed
 import modules.model
 
-train.iterations=200000
+train.iterations=20
 train.learning_rate=0.0003
 train.weight_decay=0.035
 train.batch_size=256
@@ -20,14 +20,17 @@ train.save_dir_root="out/decoder/amazon/"
 train.dataset_folder="dataset/amazon"
 train.dataset=%data.processed.RecDataset.AMAZON
 train.force_dataset_process=False
-train.full_eval_every=10000
-train.partial_eval_every=5000
+train.full_eval_every=10
+train.partial_eval_every=5
 train.dataset_split="beauty"
 train.dropout_p=0.3
 train.attn_heads=8
 train.attn_embed_dim=512
 train.attn_layers=8
 train.decoder_embed_dim=128
-train.model_jagged_mode=True
+train.model_jagged_mode=False
 # add the category here. If there is none then add None
 train.category="brand"
+train.search="dbs"
+train.temp=1
+train.lambda_dbs=0.8
