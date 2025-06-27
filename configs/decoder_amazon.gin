@@ -31,3 +31,6 @@ train.decoder_embed_dim=128
 train.model_jagged_mode=False
 # add the category here. If there is none then add None
 train.category="brand"
+train.search="dbs"
+train.temp=1
+train.lambda_dbs=0.8

@@ -38,14 +38,12 @@ To cope with the extensive amount of information people encounter each day, reco
 ---
 
 ## 🛠️ Task Definition
-_Define the recommendation task you are solving (e.g., sequential, generative, content-based, collaborative, ranking, etc.). Clearly describe inputs and outputs._
-TODO: TIGER treats retrieval as a generative task rather than a matching task. Instead of using approximate nearest neighbour search in an embedding space, it uses a sequence-to-sequence model to generate the Semantic ID of the next item token-by-token. 
+
+TIGER focuses on sequential recommendation and introduces a new paradigm: generative retrieval for recommendation. Instead of relying on matching item embeddings to user embeddings, TIGER directly generates the next semantic ID token-by-token based on the user's interaction history. The input consists of a user ID and the sequence of semantic IDs of previously interacted items. The output is the predicted semantic ID of the next item.
 
 ---
 
 ## 📂 Datasets
-
-_Provide the following for all datasets, including the attributes you are considering to measure things like item fairness (for example)_:
 
 - [x] [Amazon Reviews Datasets (Beauty)](https://github.com/jeykigung/P5)
   - [x] Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
@@ -75,8 +73,6 @@ _Provide the following for all datasets, including the attributes you are consid
 
 ## 📏 Metrics
 
-_Explain why these metrics are appropriate for your recommendation task and what they are measuring briefly._
-
 - [x] Recall@$k$
   - [x] Description: calculates how many of the relevant items are in the top k. Hits are calculated in the codebase, which is is equivalent to computing Recall since there is only one actual next item.
 - [x] NDCG@$k$
@@ -89,22 +85,20 @@ the [Rectools library](https://rectools.readthedocs.io/en/latest/api/rectools.me
 
 ## 🔬 Baselines & Methods
 
-_Describe each baseline, primary methods, and how they are implemented. Mention tools/frameworks used (e.g., Surprise, LightFM, RecBole, PyTorch)._
-Describe each baseline
 - [x] [SASRec](https://ieeexplore.ieee.org/abstract/document/8594844?casa_token=lOdnxe7VGB0AAAAA:r7vyi2i1y-wxW9hI9SHxkkPX7ztWs6sw1yiO2fOkYxzdRPPZRrXoNtt_Kz4htA5R2aJqknAaGg) (Self-Attentive Sequential Recommendation) employs a Transformer with a causal mask to capture the sequential behavior of users. Causal masking restricts the model's attention to the current and previous positions, which is crucial for sequential tasks. Built upon self-attention, SASRec uses multi-head attention to model long-term relationships based on limited interactions, enabling it to generate the next recommended item in a sequence.
 - [x] [S$^3$-Rec](https://arxiv.org/abs/2008.07873) (Self-Supervised Learning for Sequential Recommendation) is a self-attentive model that enhances the sequential recommendation performance by pre-training a bi-directional Transformer using self-supervised learning. To achieve this, it exploits the intrinsic data correlations based on the Mutual Information Maximization principle (MIM), which offers a framework for capturing correlations among diverse data representations. 
 
 ### 🧠 High-Level Description of Method
 
-_Explain your approach in simple terms. Describe your model pipeline: data input → embedding/representation → prediction → ranking. Discuss design choices, such as use of embeddings, neural networks, or attention mechanisms._
+TIGER consists of 2 stages:
 
-TODO: Transformer Index for GEnerative Recommenders (TIGER), proposed by Rajput et al, is a transformer-based generative retrieval model. The method assigns a semantically meaningful identifier (semantic ID) to each item. TIGER treats retrieval as a generative task rather than a matching task. Instead of using approximate nearest neighbour search in an embedding space, it uses a sequence-to-sequence model to generate the Semantic ID of the next item token-by-token. 
+- Stage 1 (semantic ID generation): Item metadata → Sentence-T5 encoder → Dense item embeddings → RQ-VAE with 3 codebooks → Discrete semantic ID
+- Stage 2 (generative retrieval): User + item history sequence → Transformer encoder-decoder → Token-by-token semantic ID prediction → Next item prediction
 
 ---
 
 ## 🌱 Proposed Extensions
 
-_List & briefly describe the extensions that you made to the original method, including extending evaluation e.g., other metrics or new datasets considered._
 - New Dataset Extension: Validating TIGER’s generalization on a dataset outside the Amazon domain (Yelp).
 - Diversity Evaluation: Integrating a new diversity metric, Intra-List Diversity (ILD@$k$).
 - Methodology Extension: Implementing Diverse Beam Search in the decoding phase and comparing it against standard beam search with normal temperature and increased temperature. 
