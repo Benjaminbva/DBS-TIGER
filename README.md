@@ -57,13 +57,13 @@ TIGER focuses on sequential recommendation and introduces a new paradigm: genera
   -  Dataset size: # users: 35.598, # items: 18.357, sparsity: 0.0453%, sequence length (mean): 8.32, sequence length (median) 6.
   -  Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
 
--  [Amazon Reviews Datasets (Toys and Games)](https://github.com/jeykigung/P5)
+###  [Amazon Reviews Datasets (Toys and Games)](https://github.com/jeykigung/P5)
   -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
   -  Subsets considered: The full datasets were used without partitioning into specific subsets.
   -  Dataset size: # users: 19.412, # items: 11.924, sparsity: 0.0724%, sequence length (mean): 8.63, sequence length (median) 6.
   -  Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
 
--  [Amazon Reviews Datasets (Yelp)](https://github.com/jeykigung/P5)
+###  [Amazon Reviews Datasets (Yelp)](https://github.com/jeykigung/P5)
   -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
   -  Subsets considered: The full datasets were used without partitioning into specific subsets.
   -  Dataset size: # users: 30.431, # items: 20.033, sparsity: 0.0519%, sequence length (mean): 11.40, sequence length (median) 8.
@@ -73,11 +73,11 @@ TIGER focuses on sequential recommendation and introduces a new paradigm: genera
 
 ## 📏 Metrics
 
--  Recall@k
+###  Recall@k
   -  Description: calculates how many of the relevant items are in the top k. Hits are calculated in the codebase, which is is equivalent to computing Recall since there is only one actual next item.
--  NDCG@k
+###  NDCG@k
   -  Description: measures how well the ranked items align with the ideal ranking. 
--  ILD@k
+###  ILD@k
   -  Description: measures the mean pairwise distance among the top-k items recommended to the user. It is implemnted using the `IntraListDivesrity` class from the 
 the [Rectools library](https://rectools.readthedocs.io/en/latest/api/rectools.metrics.diversity.IntraListDiversity.html). As the distance calculator, we use the _Pairwise Hamming Distance_, which leadings in our implementation to a distance of at least 1 and at most 4. 
 
