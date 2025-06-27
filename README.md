@@ -73,7 +73,7 @@ TIGER focuses on sequential recommendation and introduces a new paradigm: genera
 
 ## 📏 Metrics
 
-- [x] Recall@k
+-  Recall@k
   - [x] Description: calculates how many of the relevant items are in the top k. Hits are calculated in the codebase, which is is equivalent to computing Recall since there is only one actual next item.
 - [x] NDCG@k
   - [x] Description: measures how well the ranked items align with the ideal ranking. 
