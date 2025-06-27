@@ -45,48 +45,48 @@ TIGER focuses on sequential recommendation and introduces a new paradigm: genera
 
 ## 📂 Datasets
 
-- [x] [Amazon Reviews Datasets (Beauty)](https://github.com/jeykigung/P5)
-  - [x] Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
-  - [x] Subsets considered: The full datasets were used without partitioning into specific subsets.
-  - [x] Dataset size: # users: 22.363, # items: 12.101, sparsity: 0.0734%, sequence length (mean): 8.87, sequence length (median) 6.
-  - [x] Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
+-  [Amazon Reviews Datasets (Beauty)](https://github.com/jeykigung/P5)
+  -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
+  -  Subsets considered: The full datasets were used without partitioning into specific subsets.
+  -  Dataset size: # users: 22.363, # items: 12.101, sparsity: 0.0734%, sequence length (mean): 8.87, sequence length (median) 6.
+  -  Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
 
-- [x] [Amazon Reviews Datasets (Sports and Outdoors)](https://github.com/jeykigung/P5)
-  - [x] Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
-  - [x] Subsets considered: The full datasets were used without partitioning into specific subsets.
-  - [x] Dataset size: # users: 35.598, # items: 18.357, sparsity: 0.0453%, sequence length (mean): 8.32, sequence length (median) 6.
-  - [x] Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
+-  [Amazon Reviews Datasets (Sports and Outdoors)](https://github.com/jeykigung/P5)
+  -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
+  -  Subsets considered: The full datasets were used without partitioning into specific subsets.
+  -  Dataset size: # users: 35.598, # items: 18.357, sparsity: 0.0453%, sequence length (mean): 8.32, sequence length (median) 6.
+  -  Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
 
-- [x] [Amazon Reviews Datasets (Toys and Games)](https://github.com/jeykigung/P5)
-  - [x] Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
-  - [x] Subsets considered: The full datasets were used without partitioning into specific subsets.
-  - [x] Dataset size: # users: 19.412, # items: 11.924, sparsity: 0.0724%, sequence length (mean): 8.63, sequence length (median) 6.
-  - [x] Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
+-  [Amazon Reviews Datasets (Toys and Games)](https://github.com/jeykigung/P5)
+  -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
+  -  Subsets considered: The full datasets were used without partitioning into specific subsets.
+  -  Dataset size: # users: 19.412, # items: 11.924, sparsity: 0.0724%, sequence length (mean): 8.63, sequence length (median) 6.
+  -  Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
 
-- [x] [Amazon Reviews Datasets (Yelp)](https://github.com/jeykigung/P5)
-  - [x] Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
-  - [x] Subsets considered: The full datasets were used without partitioning into specific subsets.
-  - [x] Dataset size: # users: 30.431, # items: 20.033, sparsity: 0.0519%, sequence length (mean): 11.40, sequence length (median) 8.
-  - [x] Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
+-  [Amazon Reviews Datasets (Yelp)](https://github.com/jeykigung/P5)
+  -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
+  -  Subsets considered: The full datasets were used without partitioning into specific subsets.
+  -  Dataset size: # users: 30.431, # items: 20.033, sparsity: 0.0519%, sequence length (mean): 11.40, sequence length (median) 8.
+  -  Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
 
 ---
 
 ## 📏 Metrics
 
 -  Recall@k
-  - [x] Description: calculates how many of the relevant items are in the top k. Hits are calculated in the codebase, which is is equivalent to computing Recall since there is only one actual next item.
-- [x] NDCG@k
-  - [x] Description: measures how well the ranked items align with the ideal ranking. 
-- [x] ILD@k
-  - [x] Description: measures the mean pairwise distance among the top-k items recommended to the user. It is implemnted using the `IntraListDivesrity` class from the 
+  -  Description: calculates how many of the relevant items are in the top k. Hits are calculated in the codebase, which is is equivalent to computing Recall since there is only one actual next item.
+-  NDCG@k
+  -  Description: measures how well the ranked items align with the ideal ranking. 
+-  ILD@k
+  -  Description: measures the mean pairwise distance among the top-k items recommended to the user. It is implemnted using the `IntraListDivesrity` class from the 
 the [Rectools library](https://rectools.readthedocs.io/en/latest/api/rectools.metrics.diversity.IntraListDiversity.html). As the distance calculator, we use the _Pairwise Hamming Distance_, which leadings in our implementation to a distance of at least 1 and at most 4. 
 
 ---
 
 ## 🔬 Baselines & Methods
 
-- [x] [SASRec](https://ieeexplore.ieee.org/abstract/document/8594844?casa_token=lOdnxe7VGB0AAAAA:r7vyi2i1y-wxW9hI9SHxkkPX7ztWs6sw1yiO2fOkYxzdRPPZRrXoNtt_Kz4htA5R2aJqknAaGg) (Self-Attentive Sequential Recommendation) employs a Transformer with a causal mask to capture the sequential behavior of users. Causal masking restricts the model's attention to the current and previous positions, which is crucial for sequential tasks. Built upon self-attention, SASRec uses multi-head attention to model long-term relationships based on limited interactions, enabling it to generate the next recommended item in a sequence.
-- [x] [S$^3$-Rec](https://arxiv.org/abs/2008.07873) (Self-Supervised Learning for Sequential Recommendation) is a self-attentive model that enhances the sequential recommendation performance by pre-training a bi-directional Transformer using self-supervised learning. To achieve this, it exploits the intrinsic data correlations based on the Mutual Information Maximization principle (MIM), which offers a framework for capturing correlations among diverse data representations. 
+-  [SASRec](https://ieeexplore.ieee.org/abstract/document/8594844?casa_token=lOdnxe7VGB0AAAAA:r7vyi2i1y-wxW9hI9SHxkkPX7ztWs6sw1yiO2fOkYxzdRPPZRrXoNtt_Kz4htA5R2aJqknAaGg) (Self-Attentive Sequential Recommendation) employs a Transformer with a causal mask to capture the sequential behavior of users. Causal masking restricts the model's attention to the current and previous positions, which is crucial for sequential tasks. Built upon self-attention, SASRec uses multi-head attention to model long-term relationships based on limited interactions, enabling it to generate the next recommended item in a sequence.
+-  [S$^3$-Rec](https://arxiv.org/abs/2008.07873) (Self-Supervised Learning for Sequential Recommendation) is a self-attentive model that enhances the sequential recommendation performance by pre-training a bi-directional Transformer using self-supervised learning. To achieve this, it exploits the intrinsic data correlations based on the Mutual Information Maximization principle (MIM), which offers a framework for capturing correlations among diverse data representations. 
 
 ### 🧠 High-Level Description of Method
 
