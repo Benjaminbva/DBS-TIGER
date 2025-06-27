@@ -15,7 +15,7 @@
 ---
 
 ## 🧾 Project Abstract
-Recommender systems are employed for filtering and prioritizing content, with recent advances shifting towards generative approaches for sequential recommendation. Rajput et al. \cite{rajput2023recommendersystemsgenerativeretrieval} present TIGER, a generative transformer-based model designed for sequential recommendation, claiming it outperforms other SOTA models. It generates semantically meaningful item IDs, and then predicts next-item Semantic IDs with a sequence-to-sequence model. While it includes a tunable parameter to promote diversity, post-processing methods for encouraging diversity remain limited. This study investigates the reproducibility of their research by attempting to replicate the results and comparing with two other baseline methods. The main contribution of this research focuses on improving diversity output by implementing Diverse Beam Search (DBS), implementing the Intra-List Diversity metric to asses diversity. Additionally, we examined the generalizability of TIGER by testing its performance on the Yelp dataset. Our results indicate that we were able to partially validate the original findings. TIGER demonstrates generalizability to a different dataset. Furthermore, the application of DBS enhances output diversity. 
+Recommender systems are employed for filtering and prioritizing content, with recent advances shifting towards generative approaches for sequential recommendation. [Rajput et al., 2023]  present TIGER, a generative transformer-based model designed for sequential recommendation, claiming it outperforms other SOTA models. It generates semantically meaningful item IDs, and then predicts next-item Semantic IDs with a sequence-to-sequence model. While it includes a tunable parameter to promote diversity, post-processing methods for encouraging diversity remain limited. This study investigates the reproducibility of their research by attempting to replicate the results and comparing with two other baseline methods. The main contribution of this research focuses on improving diversity output by implementing Diverse Beam Search (DBS), implementing the Intra-List Diversity metric to asses diversity. Additionally, we examined the generalizability of TIGER by testing its performance on the Yelp dataset. Our results indicate that we were able to partially validate the original findings. TIGER demonstrates generalizability to a different dataset. Furthermore, the application of DBS enhances output diversity. 
 
 ---
 
@@ -105,9 +105,11 @@ TIGER consists of 2 stages:
 
 ## References
 
-1. Abramson, J., Adler, J., Dunger, J., Evans, R., Green, T., Pritzel, A., Ronneberger, O., Willmore, L., Ballard, A. J., Bambrick, J., et al.  
-   **Accurate structure prediction of biomolecular interactions with AlphaFold 3.**  
-   *Nature, 630(8016):493–500, 2024.*
+1. **[Rajput et al., 2023]**  
+  Shashank Rajput, Nikhil Mehta, Anima Singh, Raghunandan H. Keshavan, Trung Vu, Lukasz Heldt,  
+  Lichan Hong, Yi Tay, Vinh Q. Tran, Jonah Samost, Maciej Kula, Ed H. Chi & Maheswaran Sathiamoorthy.  
+  *Recommender Systems with Generative Retrieval*, arXiv:2305.05065 (2023).  
+  https://arxiv.org/abs/2305.05065
 
 ---
 
