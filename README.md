@@ -45,13 +45,13 @@ TIGER focuses on sequential recommendation and introduces a new paradigm: genera
 
 ## 📂 Datasets
 
--  [Amazon Reviews Datasets (Beauty)](https://github.com/jeykigung/P5)
+###  [Amazon Reviews Datasets (Beauty)](https://github.com/jeykigung/P5)
   -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
   -  Subsets considered: The full datasets were used without partitioning into specific subsets.
   -  Dataset size: # users: 22.363, # items: 12.101, sparsity: 0.0734%, sequence length (mean): 8.87, sequence length (median) 6.
   -  Attributes for user, item and/or group fairness: No fairness attributes were used; the study focused on diversity using Diverse Beam Search and ILD metric.
 
--  [Amazon Reviews Datasets (Sports and Outdoors)](https://github.com/jeykigung/P5)
+###  [Amazon Reviews Datasets (Sports and Outdoors)](https://github.com/jeykigung/P5)
   -  Pre-processing: removed users with fewer than 5 interactions. Applied leave-one-out protocol for evaluation. The final item in the sequence serves as the test instance, the second-to-last item is reserved for validation, and the preceding items are used for training. The number of items in a sequence is limited to 20 during training.
   -  Subsets considered: The full datasets were used without partitioning into specific subsets.
   -  Dataset size: # users: 35.598, # items: 18.357, sparsity: 0.0453%, sequence length (mean): 8.32, sequence length (median) 6.
