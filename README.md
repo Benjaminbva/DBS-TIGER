@@ -25,7 +25,7 @@ Recommender systems are employed for filtering and prioritizing content, with re
 ### Reproducability 
 
 - Exact replication of TIGER results was not possible due to limiations of the codebase.
-- The replicated values of the baselines (SASRec and S$^3$-Rec) approximate reported ones.
+- The replicated values of the baselines (SASRec and S^3-Rec) approximate reported ones.
 - Across datasets, the trends partially align, where "Sports and Outdoors" is perceived as the most difficult.
 - S$^3$-Rec outperforms the SASRec, while TIGER considerably underperforms both.
 
