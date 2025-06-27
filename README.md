@@ -33,7 +33,7 @@ Recommender systems are employed for filtering and prioritizing content, with re
 
 - New Dataset Extension (Yelp): TIGER generalizes to Yelp similarly compared to other difficult datasets, such as "Sports and Outdoors"
 - Diversity Evaluation (ILD@k): ILD@k diversity metric is integreated into our evaluation pipeline using the Rectools library and its results showed that TIGER already contains a moderate level of diversity across the datasets.
-- Methodology Extension (Diverse Beam Search): Compared to standard beam search with both normal temperature and increased temperature, we observe that Diverse Beams Search generally leads to the highest diversity scores in terms of ILD@k without substantially sacrificing its relevance score measured by NDCG@$k$.
+- Methodology Extension (Diverse Beam Search): Compared to standard beam search with both normal temperature and increased temperature, we observe that Diverse Beams Search generally leads to the highest diversity scores in terms of ILD@k without substantially sacrificing its relevance score measured by NDCG@k.
 
 ---
 
