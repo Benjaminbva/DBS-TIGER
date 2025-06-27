@@ -103,4 +103,11 @@ TIGER consists of 2 stages:
 - Diversity Evaluation: Integrating a new diversity metric, Intra-List Diversity (ILD@$k$).
 - Methodology Extension: Implementing Diverse Beam Search in the decoding phase and comparing it against standard beam search with normal temperature and increased temperature. 
 
+## References
+
+1. Abramson, J., Adler, J., Dunger, J., Evans, R., Green, T., Pritzel, A., Ronneberger, O., Willmore, L., Ballard, A. J., Bambrick, J., et al.  
+   **Accurate structure prediction of biomolecular interactions with AlphaFold 3.**  
+   *Nature, 630(8016):493–500, 2024.*
+
+---
 
